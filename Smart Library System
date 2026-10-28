@@ -1,0 +1,134 @@
+import datetime
+
+class SmartLibrary:
+    def __init__(self):
+        self.users = {}
+        self.books = {}
+
+    def header(self, title):
+        print("\n" + "=" * 50)
+        print(f" {title.upper()} ")
+        print("=" * 50)
+
+    def register_user(self, username):
+        self.header("User Registration")
+        username = username.strip()
+        if not username:
+            print("Error: Username cannot be empty.")
+            return
+        if username in self.users:
+            print(f"Warning: User '{username}' is already registered!")
+        else:
+            self.users[username] = {
+                "joined_date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "history": []
+            }
+            print(f"Success: User '{username}' has been registered.")
+
+    def add_book(self, book_id, title, genre):
+        if book_id in self.books:
+            print(f"Warning: Book ID {book_id} already exists.")
+            return
+        self.books[book_id] = {
+            "title": title, 
+            "genre": genre.strip().capitalize(), 
+            "status": "Available", 
+            "borrower": None
+        }
+
+    def display_books(self):
+        self.header("Available Books Inventory")
+        if not self.books:
+            print("No books available in the library.")
+            return
+        print(f"{'ID':<6} | {'Title':<30} | {'Genre':<15} | {'Status'}")
+        print("-" * 65)
+        for b_id, details in self.books.items():
+            status_str = "Available" if details['status'] == "Available" else "Borrowed"
+            print(f"{b_id:<6} | {details['title']:<30} | {details['genre']:<15} | {status_str}")
+
+    def display_users(self):
+        self.header("Registered Users and Borrowing History")
+        if not self.users:
+            print("No users registered yet.")
+            return
+        
+        for username, data in self.users.items():
+            print(f"User: {username} (Joined: {data['joined_date']})")
+            if data['history']:
+                borrowed_titles = [self.books[b_id]['title'] for b_id in data['history'] if b_id in self.books]
+                print(f"   Books Taken: {', '.join(borrowed_titles)}")
+            else:
+                print(f"   Books Taken: None yet.")
+            print("-" * 40)
+
+    def borrow_book(self, username, book_id):
+        self.header("Book Checkout")
+        if username not in self.users:
+            print(f"Error: User '{username}' is not registered.")
+            return
+        if book_id not in self.books:
+            print(f"Error: Book ID {book_id} does not exist.")
+            return
+        
+        book = self.books[book_id]
+        if book['status'] == "Borrowed":
+            print(f"Warning: '{book['title']}' is currently borrowed.")
+            return
+
+        book['status'] = "Borrowed"
+        book['borrower'] = username
+        self.users[username]['history'].append(book_id)
+        print(f"Success: '{username}' borrowed '{book['title']}'.")
+
+    def recommend_books(self, username):
+        self.header(f"Smart Recommendations for {username}")
+        if username not in self.users:
+            print(f"Error: User '{username}' not found.")
+            return
+
+        user_history = self.users[username]['history']
+        
+        if not user_history:
+            print("Tip: No books borrowed yet. Popular picks:")
+            available_books = [b for b in self.books.values() if b['status'] == "Available"]
+            for b in available_books[:3]:
+                print(f"   [{b['genre']}] {b['title']}")
+            return
+
+        liked_genres = set(self.books[b_id]['genre'] for b_id in user_history if b_id in self.books)
+        print(f"Based on your interest in: {', '.join(liked_genres)}")
+
+        recommendations = []
+        for b_id, b in self.books.items():
+            if b['genre'] in liked_genres and b['status'] == "Available" and b_id not in user_history:
+                recommendations.append(b)
+
+        if recommendations:
+            print("Recommended for you:")
+            for rec in recommendations:
+                print(f"   '{rec['title']}' ({rec['genre']})")
+        else:
+            print("No new recommendations in your favorite genres.")
+
+
+if __name__ == "__main__":
+    library = SmartLibrary()
+
+    library.add_book(101, "Python Crash Course", "Programming")
+    library.add_book(102, "Clean Code", "Programming")
+    library.add_book(103, "Atomic Habits", "Self-Help")
+    library.add_book(104, "The Power of Now", "Self-Help")
+    library.add_book(105, "Sapiens", "History")
+
+    library.register_user("Alice")
+    library.register_user("Bob")
+
+    library.display_books()
+
+    library.borrow_book("Alice", 101)
+    library.borrow_book("Alice", 103)
+    library.borrow_book("Bob", 105)
+
+    library.display_users()
+    library.recommend_books("Alice")
